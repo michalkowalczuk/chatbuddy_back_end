@@ -6,8 +6,6 @@ table = dynamodb.Table(os.environ.get('CHAT_DB'))
 
 
 def lambda_handler(event, context):
-    pass
-
     for record in event['Records']:
         if record['eventName'] in ['INSERT', 'MODIFY']:
             client_id = record['dynamodb']['Keys']['client_id']['S']
@@ -25,16 +23,18 @@ def lambda_handler(event, context):
                 pass
 
             messages = item.get('messages', [])
+            if messages and messages[-1]['role'] == 'user':
+                print("update with chatting nonsense")
 
-            table.update_item(
-                Key={
-                    'client_id': str(client_id),
-                    'buddy_id': str(buddy_id)
-                },
-                UpdateExpression="SET messages = :msg",
-                ExpressionAttributeValues={
-                    ':msg': messages + ['chatting nonsense'],
-                },
-
-                ReturnValues="NONE"
-            )
+                # table.update_item(
+                #     Key={
+                #         'client_id': str(client_id),
+                #         'buddy_id': str(buddy_id)
+                #     },
+                #     UpdateExpression="SET messages = :msg",
+                #     ExpressionAttributeValues={
+                #         ':msg': messages + ['chatting nonsense'],
+                #     },
+                #
+                #     ReturnValues="NONE"
+                # )
