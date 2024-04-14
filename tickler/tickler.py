@@ -17,7 +17,7 @@ def lambda_handler(event, context):
                 client_id = new_image['client_id']['S']
                 buddy_id = new_image['buddy_id']['S']
 
-                db_response = table.get_item(Key={'chat_id': client_id, 'buddy_id': buddy_id})
+                db_response = table.get_item(Key={'client_id': client_id, 'buddy_id': buddy_id})
 
                 item = db_response['Item']
                 connection_id = item.get('client_connection_id')
