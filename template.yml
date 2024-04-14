@@ -43,7 +43,7 @@ Resources:
         - AttributeName: buddy_id
           AttributeType: S
       KeySchema:
-        - AttributeName: chat_id
+        - AttributeName: client_id
           KeyType: HASH
         - AttributeName: buddy_id
           KeyType: RANGE
