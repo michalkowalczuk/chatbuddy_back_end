@@ -1,0 +1,156 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+
+Resources:
+
+  # Buddy himself
+  # **********************************************************
+
+  BuddyEngine:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: buddy_engine/
+      Handler: buddy_engine.lambda_handler
+      Runtime: python3.12
+      Timeout: 90
+      MemorySize: 2048
+      Environment:
+        Variables:
+          CHAT_DB: !Ref BuddyChatTable
+      Events:
+        DynamoDBTrigger:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt BuddyChatTable.StreamArn
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 1
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref BuddyChatTable
+        - AWSSecretsManagerGetSecretValuePolicy:
+            SecretArn: !Sub arn:aws:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:buddy_keys-*
+
+  # Chat table
+  # **********************************************************
+
+  BuddyChatTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: buddy_chat
+      AttributeDefinitions:
+        - AttributeName: client_id
+          AttributeType: S
+        - AttributeName: buddy_id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: chat_id
+          KeyType: HASH
+        - AttributeName: buddy_id
+          KeyType: RANGE
+      BillingMode: PAY_PER_REQUEST
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+
+  # Chat retrieve
+  # **********************************************************
+
+  ChatRetriever:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: chat_retriever/
+      Handler: chat_retriever.lambda_handler
+      Runtime: python3.12
+      Environment:
+        Variables:
+          CHAT_DB: !Ref BuddyChatTable
+      FunctionUrlConfig:
+        AuthType: NONE
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref BuddyChatTable
+
+  # Web socket gateway, triggers, routes etc.
+  # **********************************************************
+
+  WebSocketChatApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: chat_buddy_ws
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: $request.body.action
+
+  WebSocketChatApiStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref WebSocketChatApi
+      StageName: main
+      AutoDeploy: true
+
+  ClientMessageRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref WebSocketChatApi
+      RouteKey: client_message
+      AuthorizationType: NONE
+      Target: !Join
+        - '/'
+        - - 'integrations'
+          - !Ref ClientMessageIntegration
+
+  ClientMessageIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref WebSocketChatApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri:
+        Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ClientMessageHandler.Arn}/invocations
+
+  ClientMessageHandler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: client_message_handler/
+      Handler: client_message_handler.lambda_handler
+      Runtime: python3.12
+      Environment:
+        Variables:
+          CHAT_DB: !Ref BuddyChatTable
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref BuddyChatTable
+
+  ClientMessageHandlerPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref ClientMessageHandler
+      Principal: apigateway.amazonaws.com
+
+  Tickler:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: tickler/
+      Handler: tickler.lambda_handler
+      Runtime: python3.12
+      Timeout: 15
+      Environment:
+        Variables:
+          CHAT_DB: !Ref BuddyChatTable
+          WSS_MANAGEMENT_ENDPOINT:
+            Fn::Sub: https://${WebSocketChatApi}.execute-api.${AWS::Region}.amazonaws.com/${WebSocketChatApiStage}
+      Events:
+        DynamoDBTrigger:
+          Type: DynamoDB
+          Properties:
+            Stream: !GetAtt BuddyChatTable.StreamArn
+            StartingPosition: TRIM_HORIZON
+            BatchSize: 1
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref BuddyChatTable
+        - Version: '2012-10-17'
+          Statement:
+            - Effect: Allow
+              Action:
+                - execute-api:ManageConnections
+              Resource:
+                - !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:${WebSocketChatApi}/*/POST/@connections/*
