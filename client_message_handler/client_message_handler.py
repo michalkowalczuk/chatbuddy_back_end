@@ -8,15 +8,15 @@ table = dynamodb.Table(os.environ.get('CHAT_DB'))
 
 def lambda_handler(event, context):
     message_body = json.loads(event['body'])
-    customer_message = message_body.get('message', None)
-    chat_id = message_body.get('chat_id', None)
+    client_message = message_body.get('message', None)
+    client_id = message_body.get('client_id', None)
     buddy_id = message_body.get('buddy_id', None)
 
     # this is to update connection ID on reconnect
-    if not customer_message:
+    if not client_message:
         table.update_item(
             Key={
-                'client_id': str(chat_id),
+                'client_id': str(client_id),
                 'buddy_id': str(buddy_id)
             },
             UpdateExpression="SET client_connection_id = :conn_id",
@@ -27,10 +27,10 @@ def lambda_handler(event, context):
         )
 
     else:
-        user_message = {'role': 'user', 'content': customer_message}
+        user_message = {'role': 'user', 'content': client_message}
         table.update_item(
             Key={
-                'client_id': str(chat_id),
+                'client_id': str(client_id),
                 'buddy_id': str(buddy_id)
             },
             UpdateExpression="SET client_connection_id = :conn_id, messages = list_append(if_not_exists(messages, "
