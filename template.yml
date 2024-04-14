@@ -24,6 +24,7 @@ Resources:
             Stream: !GetAtt BuddyChatTable.StreamArn
             StartingPosition: TRIM_HORIZON
             BatchSize: 1
+            MaximumRetryAttempts: 0
       Policies:
         - DynamoDBCrudPolicy:
             TableName: !Ref BuddyChatTable
