@@ -8,7 +8,8 @@ table = dynamodb.Table(os.environ.get('CHAT_DB'))
 
 def lambda_handler(event, context):
     message_body = json.loads(event['body'])
-    client_message = message_body.get('message', None)
+    client_message = message_body.get('client_message', "")
+    client_event = message_body.get('client_event', "")
     client_id = message_body.get('client_id', None)
     buddy_id = message_body.get('buddy_id', None)
 
@@ -27,7 +28,12 @@ def lambda_handler(event, context):
         )
 
     else:
-        user_message = {'role': 'user', 'content': client_message}
+        user_message = {
+            'role': 'user',
+            'text': client_message,
+            'event': client_event
+        }
+
         table.update_item(
             Key={
                 'client_id': str(client_id),
