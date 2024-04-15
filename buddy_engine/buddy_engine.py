@@ -4,6 +4,7 @@ import os
 import vertexai.preview
 from google.oauth2.service_account import Credentials
 from vertexai.generative_models import Content, Part
+from vertexai.preview.generative_models import GenerativeModel
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ.get('CHAT_DB'))
@@ -34,9 +35,11 @@ def lambda_handler(event, context):
                 pass
 
             messages = item.get('messages', [])
-            print(google_format_message_history(messages))
+
             if messages and messages[-1]['role'] == 'user':
-                dummy_message = {"role": "model", "text": "this is nonsense from assistant"}
+                model_response = generate_model_response(google_format_message_history(messages))
+                dummy_message = {"role": "model", "text": model_response}
+
                 table.update_item(
                     Key={
                         'client_id': str(client_id),
@@ -49,6 +52,22 @@ def lambda_handler(event, context):
 
                     ReturnValues="NONE"
                 )
+
+
+def generate_model_response(history):
+    system_instr = [
+        """
+            User messages are structured as follows:
+
+            <event> This will describe user event for context </event>
+            <message> This is actual message from the user you should respond to </message>
+
+        """]
+
+    generative_multimodal_model = GenerativeModel(model_id, system_instruction=system_instr)
+    response = generative_multimodal_model.generate_content(history)
+
+    return response.candidates[0].text
 
 
 def google_format_message_history(messages):
