@@ -64,6 +64,8 @@ def google_format_message_history(messages):
                 message=message.get('message', ''))
             history.append(history_content(role='user', text=user_text))
 
+    return history
+
 
 def history_content(role, text):
     return Content(role=role, parts=[Part.from_text(text)])
