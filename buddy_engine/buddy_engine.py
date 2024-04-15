@@ -37,8 +37,11 @@ def lambda_handler(event, context):
             messages = item.get('messages', [])
 
             if messages and messages[-1]['role'] == 'user':
-                model_response = generate_model_response(generate_model_response(messages))
-                dummy_message = {"role": "model", "text": model_response}
+
+                google_history = google_format_message_history(messages)
+                model_response = generate_model_response(google_history)
+
+                model_message = {"role": "model", "text": model_response}
 
                 table.update_item(
                     Key={
@@ -47,7 +50,7 @@ def lambda_handler(event, context):
                     },
                     UpdateExpression="SET messages = :msg",
                     ExpressionAttributeValues={
-                        ':msg': messages + [dummy_message],
+                        ':msg': messages + [model_message],
                     },
 
                     ReturnValues="NONE"
