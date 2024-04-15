@@ -37,7 +37,7 @@ def lambda_handler(event, context):
             messages = item.get('messages', [])
 
             if messages and messages[-1]['role'] == 'user':
-                model_response = generate_model_response(google_format_message_history(messages))
+                model_response = generate_model_response(generate_model_response(messages))
                 dummy_message = {"role": "model", "text": model_response}
 
                 table.update_item(
