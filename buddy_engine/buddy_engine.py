@@ -37,9 +37,7 @@ def lambda_handler(event, context):
             messages = item.get('messages', [])
 
             if messages and messages[-1]['role'] == 'user':
-
-                google_history = google_format_message_history(messages)
-                model_response = generate_model_response(google_history)
+                model_response = generate_model_response(messages)
 
                 model_message = {"role": "model", "text": model_response}
 
@@ -68,7 +66,12 @@ def generate_model_response(history):
         """]
 
     generative_multimodal_model = GenerativeModel(model_id, system_instruction=system_instr)
-    response = generative_multimodal_model.generate_content(history)
+
+    google_formatted_history = google_format_message_history(history)
+
+    print(google_formatted_history)
+
+    response = generative_multimodal_model.generate_content(google_formatted_history)
 
     return response.candidates[0].text
 
