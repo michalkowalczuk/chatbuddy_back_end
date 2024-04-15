@@ -86,7 +86,7 @@ def google_format_message_history(messages):
         elif message['role'] == 'user':
             user_text = user_message(
                 event=message.get('event', ''),
-                message=message.get('message', ''))
+                message=message.get('text', ''))
             history.append(history_content(role='user', text=user_text))
 
     return history
