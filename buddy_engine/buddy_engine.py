@@ -24,7 +24,7 @@ def lambda_handler(event, context):
 
             messages = item.get('messages', [])
             if messages and messages[-1]['role'] == 'user':
-                dummy_message = {"role": "assistant", "message": "this is nonsense from assistant"}
+                dummy_message = {"role": "assistant", "content": "this is nonsense from assistant"}
                 table.update_item(
                     Key={
                         'client_id': str(client_id),
