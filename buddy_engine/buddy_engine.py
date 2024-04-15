@@ -82,6 +82,9 @@ def generate_model_response(history):
             Self-Harm Escalation: The system must have protocols in place to detect mentions or indications of self-harm, including suicidal thoughts, and escalate these cases to human operators or suggest immediate professional intervention.
         """,
         """
+            Avoid using <voice> </voice> tags
+        """,
+        """
             User messages are structured as follows:
 
             <event> This will describe user event for context </event>
