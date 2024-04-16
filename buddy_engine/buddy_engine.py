@@ -117,6 +117,8 @@ def google_format_message_history(messages):
                 message=message.get('text', ''))
             history.append(history_content(role='user', text=user_text))
 
+    print(history)
+
     return history
 
 
