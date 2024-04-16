@@ -8,7 +8,7 @@ from google.oauth2.service_account import Credentials
 from vertexai.generative_models import Content, Part
 from vertexai.preview.generative_models import GenerativeModel
 
-from buddy_engine import buddies
+import buddies
 
 dynamodb = boto3.resource('dynamodb')
 table = dynamodb.Table(os.environ.get('CHAT_DB'))
@@ -89,7 +89,10 @@ def google_format_message_history(messages):
     for message in messages:
 
         if message['role'] == 'model':
-            history.append(history_content(role='model', text=message.get('text', '')))
+            if previous_role == 'model':
+                history[-1].parts.append(Part.from_text(message.get('text', '')))
+            else:
+                history.append(history_content(role='model', text=message.get('text', '')))
 
         elif message['role'] == 'user':
             user_text = user_message(
