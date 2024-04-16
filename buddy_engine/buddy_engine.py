@@ -1,3 +1,5 @@
+import json
+
 import boto3
 import os
 
@@ -13,11 +15,11 @@ model_id = "gemini-1.5-pro-preview-0409"
 project_id = "chatbuddy-420408"
 region = "us-central1"
 
-vertexai.init(project=project_id, location=region,
-              credentials=Credentials.from_service_account_file('google_sa.json'))
-
 
 def lambda_handler(event, context):
+    vertexai.init(project=project_id, location=region,
+                  credentials=Credentials.from_service_account_info(get_secret('google_service_acc')))
+
     for record in event['Records']:
         if record['eventName'] in ['INSERT', 'MODIFY']:
             client_id = record['dynamodb']['Keys']['client_id']['S']
@@ -126,3 +128,21 @@ def user_message(event="", message=""):
         <event>{event}</event>
         <message>{message}</message>
     """
+
+
+def get_secret(name):
+    secret_name = "buddy_keys"
+    region_name = os.environ['AWS_REGION']
+
+    session = boto3.session.Session()
+    client = session.client(
+        service_name='secretsmanager',
+        region_name=region_name
+    )
+
+    get_secret_value_response = client.get_secret_value(
+        SecretId=secret_name
+    )
+
+    secret = get_secret_value_response['SecretString']
+    return json.loads(secret).get(name, None)
