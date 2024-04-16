@@ -29,8 +29,6 @@ def lambda_handler(event, context):
         )
 
     else:
-        # add date time
-
         user_message = {
             'role': 'user',
             'text': client_message,
