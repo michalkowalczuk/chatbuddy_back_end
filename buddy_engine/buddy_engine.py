@@ -17,8 +17,9 @@ region = "us-central1"
 
 
 def lambda_handler(event, context):
+    service_acc_creds = json.loads(get_secret('google_service_acc'))
     vertexai.init(project=project_id, location=region,
-                  credentials=Credentials.from_service_account_info(get_secret('google_service_acc')))
+                  credentials=Credentials.from_service_account_info(service_acc_creds))
 
     for record in event['Records']:
         if record['eventName'] in ['INSERT', 'MODIFY']:
