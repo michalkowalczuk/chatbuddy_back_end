@@ -89,9 +89,10 @@ def generate_model_response(history):
         """,
         """
             User messages are structured as follows:
-
-            <event> This will describe user event for context that includes users' name and users' local date and time the message was sent in the format of yyyy-MM-dd – kk:mm:ss</event>
-            <message> This is actual message from the user you should respond to </message>
+            
+            <local_date_time>Local date the message was sent to you, formatted as YYYY-mm-dd HH:MM:SS</local_date_time>
+            <events>User events and/or additional information about user</event>
+            <message>Actual message from the user</message>
 
         """]
 
@@ -114,8 +115,11 @@ def google_format_message_history(messages):
         elif message['role'] == 'user':
             user_text = user_message(
                 event=message.get('event', ''),
-                message=message.get('text', ''))
+                message=message.get('text', ''),
+                local_date_time=message.get('local_dt'))
             history.append(history_content(role='user', text=user_text))
+
+    print(history)
 
     return history
 
@@ -124,8 +128,9 @@ def history_content(role, text):
     return Content(role=role, parts=[Part.from_text(text)])
 
 
-def user_message(event="", message=""):
+def user_message(event="", message="", local_date_time=""):
     return f"""
+        <local_date_time>{local_date_time}</local_date_time>
         <event>{event}</event>
         <message>{message}</message>
     """

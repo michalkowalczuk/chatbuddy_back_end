@@ -1,4 +1,3 @@
-import datetime
 import json
 import boto3
 import os
@@ -9,30 +8,45 @@ table = dynamodb.Table(os.environ.get('CHAT_DB'))
 
 def lambda_handler(event, context):
     message_body = json.loads(event['body'])
-    client_message = message_body.get('client_message', "")
-    client_event = message_body.get('client_event', "")
+
+    update_connection = message_body.get('update_connection', None)
     client_id = message_body.get('client_id', None)
     buddy_id = message_body.get('buddy_id', None)
 
+    client_message = message_body.get('client_message', "")
+    client_event = message_body.get('client_event', "")
+    client_dt = message_body.get('client_date_time', "")
+
     # this is to update connection ID on reconnect
-    if not client_message and not client_event:
-        table.update_item(
-            Key={
-                'client_id': str(client_id),
-                'buddy_id': str(buddy_id)
-            },
-            UpdateExpression="SET client_connection_id = :conn_id",
-            ExpressionAttributeValues={
-                ':conn_id': event['requestContext']['connectionId']
-            },
-            ReturnValues="NONE"
+    if client_id and update_connection:
+        print("updating connections")
+
+        response = table.query(
+            KeyConditionExpression='client_id = :client_id',
+            ExpressionAttributeValues={':client_id': str(client_id)}
         )
+
+        items = response['Items']
+
+        for item in items:
+            table.update_item(
+                Key={
+                    'client_id': item['client_id'],
+                    'buddy_id': item['buddy_id']
+                },
+                UpdateExpression='SET client_connection_id = :conn_id',
+                ExpressionAttributeValues={
+                    ':conn_id': event['requestContext']['connectionId']
+                },
+                ReturnValues="NONE"
+            )
 
     else:
         user_message = {
             'role': 'user',
             'text': client_message,
-            'event': client_event
+            'event': client_event,
+            'local_dt': client_dt
         }
 
         table.update_item(
