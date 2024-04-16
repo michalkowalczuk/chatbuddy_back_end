@@ -19,7 +19,6 @@ def lambda_handler(event, context):
 
     # this is to update connection ID on reconnect
     if client_id and update_connection:
-        print("updating connections")
 
         response = table.query(
             KeyConditionExpression='client_id = :client_id',
@@ -41,7 +40,7 @@ def lambda_handler(event, context):
                 ReturnValues="NONE"
             )
 
-    else:
+    elif client_id and buddy_id:
         user_message = {
             'role': 'user',
             'text': client_message,
