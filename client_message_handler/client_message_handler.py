@@ -15,7 +15,7 @@ def lambda_handler(event, context):
     buddy_id = message_body.get('buddy_id', None)
 
     # this is to update connection ID on reconnect
-    if not client_message:
+    if not client_message and not client_event:
         table.update_item(
             Key={
                 'client_id': str(client_id),
