@@ -107,23 +107,25 @@ def generate_model_response(history):
 
 def google_format_message_history(messages):
     history = []
-    current_role = None
-    current_parts = []
+    previous_role = None
 
     for message in messages:
-        role = message['role']
-        text = message.get('text', '')
 
-        if role == current_role:
-            current_parts.append(Part.from_text(text))
-        else:
-            if current_parts:
-                history.append(Content(role=current_role, parts=current_parts))
-            current_role = role
-            current_parts = [Part.from_text(text)]
+        if message['role'] == 'model':
+            history.append(history_content(role='model', text=message.get('text', '')))
 
-    if current_parts:
-        history.append(Content(role=current_role, parts=current_parts))
+        elif message['role'] == 'user':
+            user_text = user_message(
+                event=message.get('event', ''),
+                message=message.get('text', ''),
+                local_date_time=message.get('local_dt'))
+
+            if previous_role == 'user':
+                history[-1].parts.append(Part.from_text(user_text))
+            else:
+                history.append(history_content(role='user', text=user_text))
+
+        previous_role = message['role']
 
     return history
 
