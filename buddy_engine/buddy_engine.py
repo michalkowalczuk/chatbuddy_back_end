@@ -119,8 +119,6 @@ def google_format_message_history(messages):
                 local_date_time=message.get('local_dt'))
             history.append(history_content(role='user', text=user_text))
 
-    print(history)
-
     return history
 
 
