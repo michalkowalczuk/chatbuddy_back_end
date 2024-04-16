@@ -90,7 +90,7 @@ def generate_model_response(history):
         """
             User messages are structured as follows:
 
-            <event> This will describe user event for context that includes users' name and users' local date and time the message was sent </event>
+            <event> This will describe user event for context that includes users' name and users' local date and time the message was sent (24hr clock) </event>
             <message> This is actual message from the user you should respond to </message>
 
         """]
