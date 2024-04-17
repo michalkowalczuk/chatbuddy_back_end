@@ -64,14 +64,13 @@ def generate_model_response(history, buddy_id):
     system_instr = [
         buddies.buddies_system_prompts[buddy_id],
         """
-            Do not include any of the HTML tags in your responses.
-        """,
-        """
             User messages are structured as follows:
             
             <local_date_time>Local date the message was sent to you, formatted as YYYY-mm-dd HH:MM:SS</local_date_time>
             <events>User events and/or additional information about user</event>
             <message>Actual message from the user</message>
+            
+            You do not respond in that way, respond with text only without any HTML tags.
 
         """]
 
