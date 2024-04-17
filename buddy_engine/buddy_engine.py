@@ -64,7 +64,7 @@ def generate_model_response(history, buddy_id):
     system_instr = [
         buddies.buddies_system_prompts[buddy_id],
         """
-            Avoid using <voice> </voice> tags
+            Do not include any of the HTML tags in your responses.
         """,
         """
             User messages are structured as follows:
