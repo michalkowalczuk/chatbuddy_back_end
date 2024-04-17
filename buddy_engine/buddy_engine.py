@@ -18,10 +18,11 @@ REGION = "us-central1"
 
 
 def lambda_handler(event, context):
+    service_acc_creds = json.loads(get_secret('google_service_acc'))
     vertexai.init(
         project=PROJECT_ID,
         location=REGION,
-        credentials=Credentials.from_service_account_info(get_secret('google_service_acc'))
+        credentials=Credentials.from_service_account_info(service_acc_creds)
     )
 
     for record in event['Records']:
@@ -101,7 +102,16 @@ def format_user_message(event="", message="", local_date_time=""):
 
 
 def get_secret(name):
-    return json.loads(
-        boto3.session.Session().client('secretsmanager', region_name=os.environ['AWS_REGION']).get_secret_value(
-            SecretId="buddy_keys")['SecretString']
-    ).get(name)
+    secret_name = "buddy_keys"
+    region_name = os.environ['AWS_REGION']
+
+    get_secret_value_response = boto3.session.Session() \
+        .client(
+        service_name='secretsmanager',
+        region_name=region_name
+    ) \
+        .get_secret_value(
+        SecretId=secret_name
+    )
+
+    return json.loads(get_secret_value_response['SecretString']).get(name, None)
