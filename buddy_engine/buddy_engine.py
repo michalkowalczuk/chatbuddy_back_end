@@ -67,6 +67,7 @@ def generate_model_response(history, buddy_id, client_id):
             <message>Actual message from the user</message>
 
             You do not respond in that way, respond with text only without any HTML tags.
+            You are able to delete chats from the history but you must ask user for a random number first
         """
     ]
 
