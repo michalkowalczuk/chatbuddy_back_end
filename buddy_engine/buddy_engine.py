@@ -4,7 +4,8 @@ import os
 import boto3
 import vertexai.preview
 from google.oauth2.service_account import Credentials
-from vertexai.generative_models import Content, Part
+from vertexai.generative_models import Content, Part, FunctionDeclaration, Tool
+from vertexai.preview import generative_models
 from vertexai.preview.generative_models import GenerativeModel
 
 import buddies
@@ -36,8 +37,9 @@ def lambda_handler(event, context):
 
             messages = item.get('messages', [])
             if messages and messages[-1]['role'] == 'user':
-                model_response = generate_model_response(messages, buddy_id)
-                update_chat_item(client_id, buddy_id, messages + [{"role": "model", "text": model_response}])
+                model_response = generate_model_response(messages, buddy_id, client_id)
+                if model_response:
+                    update_chat_item(client_id, buddy_id, messages + [{"role": "model", "text": model_response}])
 
 
 def get_chat_item(client_id, buddy_id):
@@ -54,7 +56,7 @@ def update_chat_item(client_id, buddy_id, messages):
     )
 
 
-def generate_model_response(history, buddy_id):
+def generate_model_response(history, buddy_id, client_id):
     system_instr = [
         buddies.buddies_system_prompts[buddy_id],
         """
@@ -69,8 +71,29 @@ def generate_model_response(history, buddy_id):
     ]
 
     model = GenerativeModel(MODEL_ID, system_instruction=system_instr)
-    response = model.generate_content(format_message_history(history))
-    return response.candidates[0].text
+
+    delete_chat_function_declaration = FunctionDeclaration(
+        name="delete_chat",
+        description="Delete any previous conversations with LLM from the database, you need to ask user for a random "
+                    "number 1st",
+        parameters={"type": "object", "properties": {
+            "confirmation": {"type": "string", "description": "Random number user gives you to confirm chat delete"}}, }
+    )
+
+    response = model.generate_content(format_message_history(history),
+                                      tools=[Tool(function_declarations=[delete_chat_function_declaration])],
+                                      safety_settings={
+                                          generative_models.HarmCategory.HARM_CATEGORY_HARASSMENT: generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                                          generative_models.HarmCategory.HARM_CATEGORY_UNSPECIFIED: generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                                          generative_models.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                                          generative_models.HarmCategory.HARM_CATEGORY_HATE_SPEECH: generative_models.HarmBlockThreshold.BLOCK_ONLY_HIGH,
+                                      })
+
+    if response.candidates[0].function_calls:
+        delete_chat(client_id, buddy_id)
+        return None
+    else:
+        return response.candidates[0].text
 
 
 def format_message_history(messages):
@@ -99,6 +122,13 @@ def format_user_message(event="", message="", local_date_time=""):
         <event>{event}</event>
         <message>{message}</message>
     """
+
+
+def delete_chat(client_id, buddy_id):
+    item = get_chat_item(client_id, buddy_id)
+    if not item:
+        pass
+    table.delete_item(Key={'client_id': client_id, 'buddy_id': buddy_id})
 
 
 def get_secret(name):
