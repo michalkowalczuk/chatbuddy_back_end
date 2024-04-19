@@ -74,8 +74,8 @@ def generate_model_response(history, buddy_id, client_id):
 
     delete_chat_function_declaration = FunctionDeclaration(
         name="delete_chat",
-        description="Delete any previous conversations with LLM from the database, you need to ask user for a random "
-                    "number 1st",
+        description="Deletes any previous conversations with you from the database on users request, "
+                    "you need to ask user for a random number first",
         parameters={"type": "object", "properties": {
             "confirmation": {"type": "string", "description": "Random number user gives you to confirm chat delete"}}, }
     )
