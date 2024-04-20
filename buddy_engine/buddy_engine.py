@@ -74,10 +74,10 @@ def generate_model_response(history, buddy_id, client_id):
 
     delete_chat_function_declaration = FunctionDeclaration(
         name="delete_chat",
-        description="Deletes any previous conversations with you from the database on users request, you need "
-                    "to confirm with user if he want to delete the conversations",
+        description="Deletes any previous conversations with you from the database on users request, to be able "
+                    "to delete the conversation you need to ask for the users' name to confirm",
         parameters={"type": "object", "properties": {
-            "confirmation": {"type": "string", "description": "Describe the way user confirm chat deletion"}}, }
+            "confirmation": {"type": "string", "description": "The name user gave you"}}, }
     )
 
     response = model.generate_content(format_message_history(history),
