@@ -74,10 +74,10 @@ def generate_model_response(history, buddy_id, client_id):
 
     delete_chat_function_declaration = FunctionDeclaration(
         name="delete_chat",
-        description="Deletes any previous conversations with you from the database on users request, "
-                    "you need to ask user for a random number first",
+        description="Deletes any previous conversations with you from the database on users request, you need "
+                    "to confirm with user if he want to delete the conversations",
         parameters={"type": "object", "properties": {
-            "confirmation": {"type": "string", "description": "Random number user gives you to confirm chat delete"}}, }
+            "confirmation": {"type": "string", "description": "Describe the way user confirm chat deletion"}}, }
     )
 
     response = model.generate_content(format_message_history(history),
@@ -128,7 +128,11 @@ def delete_chat(client_id, buddy_id):
     item = get_chat_item(client_id, buddy_id)
     if not item:
         pass
-    table.delete_item(Key={'client_id': client_id, 'buddy_id': buddy_id})
+    table.update_item(
+        Key={'client_id': client_id, 'buddy_id': buddy_id},
+        UpdateExpression='SET messages = :empty_list',
+        ExpressionAttributeValues={':empty_list': []}
+    )
 
 
 def get_secret(name):
